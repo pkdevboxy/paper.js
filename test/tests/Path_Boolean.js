@@ -14,7 +14,7 @@ module('Path Boolean Operations');
 
 function createPath(str) {
     var ctor = (str.match(/z/gi) || []).length > 1 ? CompoundPath : Path;
-    return new ctor(str)
+    return new ctor(str);
 }
 
 function compareBoolean(actual, expected, message, options) {
@@ -28,7 +28,7 @@ function compareBoolean(actual, expected, message, options) {
     }
     actual.style = expected.style = {
         strokeColor: 'black',
-        fillColor: 'yellow'
+        fillColor: expected.closed ? 'yellow' : null
     };
     equals(actual, expected, message, options || { rasterize: true });
 }
@@ -120,6 +120,37 @@ test('#719', function() {
     compareBoolean(result, expected);
 });
 
+test('#757 (support for open paths)', function() {
+    var rect = new Path.Rectangle({
+        from: [100, 250],
+        to: [350, 350]
+    });
+
+    var line = new Path({
+        segments: [
+            [100, 200],
+            [150, 400],
+            [200, 200],
+            [250, 400],
+            [300, 200],
+            [350, 400]
+        ]
+    });
+
+    var res = line.intersect(rect);
+
+    var children = res.removeChildren();
+    var first = children[0];
+    for (var i = 1; i < children.length; i++) {
+        first.join(children[i]);
+    }
+    first.insertAbove(res);
+    res.remove();
+    res = first;
+    compareBoolean(res,
+        'M112.5,250l25,100l25,0l25,-100l25,0l25,100l25,0l25,-100l25,0l25,100');
+});
+
 test('#784', function() {
     var path1 = createPath('M495.9,1693.5c-42.2-203.5-64.5-304.9-78-299.9 c-1.7,0.6-0.3,6.7,5.3,22.5l209.4-74.8l75.8,303.9L495.9,1693.5z');
     var path2 = createPath('M632.6,1341.2l-209.4,74.9c95.4,267,135.6,201-60.1-144.5l202.9-85.7 L632.6,1341.2z');
@@ -195,7 +226,7 @@ test('#839', function() {
     var p2 = new Path.Rectangle(250, 300, 100, 200);
     compareBoolean(function() { return p1.subtract(p2); },
         'M522,352l-22,48l-20,0l-32,48l-98,0l0,-96z M250,448l-150,0l0,-96l150,0z');
-})
+});
 
 test('#865', function() {
     function executeTest(offset) {
@@ -329,7 +360,7 @@ test('#885', function() {
     compareBoolean(function() { return p1.exclude(p2); }, empty);
 });
 
-test('#889 & #890', function() {
+test('#889', function() {
     var cp = new CompoundPath([
         new Path({ segments: [ [340.26, 358.4], [576, 396.8], [345.78, 396.8] ], closed: true }),
         new Path({ segments: [ [691.2, 685.76], [672, 550.4, 0, 0, 10, 0], [729.6, 608, 0, -20, 0, 0] ], closed: true })
@@ -337,7 +368,9 @@ test('#889 & #890', function() {
     var p = new Path({ segments: [ [739, 418], [637, 704], [205, 704], [204.30709922574619, 356.553500194953] ], closed: true });
     compareBoolean(function() { return cp.subtract(p); },
         'M340.26,358.4l235.74,38.4l-21.47738,0l-212.24889,-24.39148z M691.2,685.76l-13.57151,-95.67911l11.09506,-31.10967c17.43794,12.2938 40.87645,34.99446 40.87645,49.02878z');
+});
 
+test('#890', function() {
     var cp = new CompoundPath([
         new Path({ segments: [ [676, 396.8], [445.78, 396.8], [426, 260] ], closed: true }),
         new Path({ segments: [ [672, 550.4, 0, 0, 31.74000000000001, 0], [633.5999999999999, 732.8, 0, 26.519999999999982] ], closed: true })
@@ -433,6 +466,17 @@ test('Isolated edge-cases from @iconexperience\'s boolean-test suite', function(
     // Test all of @iconexperience's isolated cases in one batch.
     // Read more in #784
     var paths = [[
+        [
+            [240, 270, 0, 0, 0, 0],
+            [250.53466323186618, 221.0057178821544, 0, 0, 0, 0],
+            [237.67824477332854, 193.79795691566554, 0, 0, 0, 0],
+            [320, 240, 0, 0, 0, 0]
+        ], [
+            [263.31216874462405, 248.04647709671602, 0, 0, 0, 0],
+            [230, 250, 0, 0, 0, 0],
+            [237.6782447781314, 193.79795691339606, 0, 0, 0, 0]
+        ]
+    ], [
         [
             [450, 230, 0, 0, 0, 0],
             [362.46932779553646, 264.4394368330295, 0, 0, 0, 0],
@@ -754,6 +798,7 @@ test('Isolated edge-cases from @iconexperience\'s boolean-test suite', function(
         ]
     ]];
     var results = [
+        ['M240,270l4.48298,-20.84932l-14.48298,0.84932l7.67824,-56.20204l82.32176,46.20204z M237.67824,193.79796z', 'M244.48298,249.15068l6.05168,-28.14496l12.77751,27.04076z'],
         ['M450,230l-87.53067,34.43944l-0.01593,-0.02371c-0.91969,-0.32388 -30.35274,-0.48069 -30.67835,2.89141l-2.76789,-52.67014z', ''],
         ['M211.76471,391.55301c-1.13066,-11.28456 3.81977,12.25688 -5.47954,24.76763l-28.00902,-21.41225l-26.21252,2.62636l13.04584,-12.69198l-22.93592,-17.53397l30.159,10.50681l46.32376,-45.06725c-9.58101,10.09791 -8.78302,39.92732 -6.89161,58.80464z', 'M178.27615,394.90839l-13.16668,-10.06562l7.22309,-7.02716l39.43215,13.7374z'],
         ['M138.31417,456.06811c1.62465,-1.18877 -18.69614,16.61617 -34.61033,15.37458l22.34488,-66.7556l-23.16516,-97.04078l209.03396,72.10619c-68.45789,0.5466 -139.96009,51.6986 -173.60335,76.31563z', 'M126.04871,404.68708l21.5947,-64.51445l-9.32924,115.89547z'],

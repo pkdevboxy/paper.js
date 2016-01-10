@@ -67,6 +67,10 @@ var CurveLocation = Base.extend(/** @lends CurveLocation# */{
 
     _setCurve: function(curve) {
         var path = curve._path;
+        // We only store the path to verify versions for cachd values.
+        // To ensure we use the right path (e.g. after splitting), we shall
+        // always access the path on the result of getCurve().
+        this._path = path;
         this._version = path ? path._version : 0;
         this._curve = curve;
         this._segment = null; // To be determined, see #getSegment()
@@ -88,8 +92,8 @@ var CurveLocation = Base.extend(/** @lends CurveLocation# */{
     /**
      * The segment of the curve which is closer to the described location.
      *
-     * @type Segment
      * @bean
+     * @type Segment
      */
     getSegment: function() {
         // Request curve first, so _segment gets invalidated if it's out of sync
@@ -116,18 +120,17 @@ var CurveLocation = Base.extend(/** @lends CurveLocation# */{
     /**
      * The curve that this location belongs to.
      *
-     * @type Curve
      * @bean
+     * @type Curve
      */
     getCurve: function() {
-        var curve = this._curve,
-            path = curve && curve._path,
+        var path = this._path,
             that = this;
         if (path && path._version !== this._version) {
             // If the path's segments have changed in the meantime, clear the
             // internal _parameter value and force refetching of the correct
             // curve again here.
-            curve = this._parameter = this._curve = this._offset = null;
+            this._parameter = this._curve = this._offset = null;
         }
 
         // If path is out of sync, access current curve objects through segment1
@@ -145,17 +148,17 @@ var CurveLocation = Base.extend(/** @lends CurveLocation# */{
             }
         }
 
-        return curve
+        return this._curve
             || trySegment(this._segment)
             || trySegment(this._segment1)
             || trySegment(this._segment2.getPrevious());
     },
 
     /**
-     * The path this curve belongs to, if any.
+     * The path that this locations is situated on.
      *
-     * @type Item
      * @bean
+     * @type Item
      */
     getPath: function() {
         var curve = this.getCurve();
@@ -166,8 +169,8 @@ var CurveLocation = Base.extend(/** @lends CurveLocation# */{
      * The index of the {@link #curve} within the {@link Path#curves} list, if
      * it is part of a {@link Path} item.
      *
-     * @type Index
      * @bean
+     * @type Index
      */
     getIndex: function() {
         var curve = this.getCurve();
@@ -179,8 +182,8 @@ var CurveLocation = Base.extend(/** @lends CurveLocation# */{
      * It is value between `0` (beginning of the curve) and `1` (end of the
      * curve).
      *
-     * @type Number
      * @bean
+     * @type Number
      */
     getParameter: function() {
         var curve = this.getCurve(),
@@ -194,8 +197,8 @@ var CurveLocation = Base.extend(/** @lends CurveLocation# */{
      * The point which is defined by the {@link #curve} and
      * {@link #parameter}.
      *
-     * @type Point
      * @bean
+     * @type Point
      */
     getPoint: function() {
         return this._point;
@@ -206,8 +209,8 @@ var CurveLocation = Base.extend(/** @lends CurveLocation# */{
      * by this object. If the curve is not part of a path, then the length
      * within the curve is returned instead.
      *
-     * @type Number
      * @bean
+     * @type Number
      */
     getOffset: function() {
         var offset = this._offset;
@@ -229,8 +232,8 @@ var CurveLocation = Base.extend(/** @lends CurveLocation# */{
      * The length of the curve from its beginning up to the location described
      * by this object.
      *
-     * @type Number
      * @bean
+     * @type Number
      */
     getCurveOffset: function() {
         var curve = this.getCurve(),
@@ -243,8 +246,8 @@ var CurveLocation = Base.extend(/** @lends CurveLocation# */{
      * result of a call to {@link PathItem#getIntersections(path)} /
      * {@link Curve#getIntersections(curve)}.
      *
-     * @type CurveLocation
      * @bean
+     * @type CurveLocation
      */
     getIntersection: function() {
         return this._intersection;
@@ -254,31 +257,31 @@ var CurveLocation = Base.extend(/** @lends CurveLocation# */{
      * The tangential vector to the {@link #curve} at the given location.
      *
      * @name CurveLocation#getTangent
-     * @type Point
      * @bean
+     * @type Point
      */
 
     /**
      * The normal vector to the {@link #curve} at the given location.
      *
      * @name CurveLocation#getNormal
-     * @type Point
      * @bean
+     * @type Point
      */
 
     /**
      * The curvature of the {@link #curve} at the given location.
      *
      * @name CurveLocation#getCurvature
-     * @type Number
      * @bean
+     * @type Number
      */
 
     /**
      * The distance from the queried point to the returned location.
      *
-     * @type Number
      * @bean
+     * @type Number
      * @see Curve#getNearestLocation(point)
      * @see Path#getNearestLocation(point)
      */

@@ -95,19 +95,20 @@ PathItem.inject(new function() {
             window.reportWindings = false;
             window.reportIntersections = false;
         }
+        // Retrieve the operator lookup table for winding numbers.
+        var operator = operators[operation];
+        // Add a simple boolean property to check for a given operation,
+        // e.g. `if (operator.unite)`
+        operator[operation] = true;
         // If path1 is open, delegate to computeOpenBoolean()
         if (!path1._children && !path1._closed)
-            return computeOpenBoolean(path1, path2, operation);
+            return computeOpenBoolean(path1, path2, operator);
         // We do not modify the operands themselves, but create copies instead,
         // fas produced by the calls to preparePath().
         // Note that the result paths might not belong to the same type
         // i.e. subtraction(A:Path, B:Path):CompoundPath etc.
         var _path1 = preparePath(path1, true),
-            _path2 = path2 && path1 !== path2 && preparePath(path2, true),
-            // Retrieve the operator lookup table for winding numbers.
-            operator = operators[operation];
-        // Add a simple boolean property to check for a given operation,
-        // e.g. `if (operator.unite)`
+            _path2 = path2 && path1 !== path2 && preparePath(path2, true);
         operator[operation] = true;
         window.reportSegments = reportSegments;
         window.reportWindings = reportWindings;
@@ -292,16 +293,18 @@ PathItem.inject(new function() {
             prevT;
 
         for (var i = locations.length - 1; i >= 0; i--) {
-            var loc = locations[i],
-                curve = loc._curve,
-                t = loc._parameter,
-                origT = t,
-                segment;
+            var loc = locations[i];
+            // Call include() before retrieving _curve, because it might cause a
+            // change in the cached location values (see #resolveCrossings()).
             if (include) {
                 if (!include(loc))
                     continue;
                 results.unshift(loc);
             }
+            var curve = loc._curve,
+                t = loc._parameter,
+                origT = t,
+                segment;
             if (curve !== prevCurve) {
                 // This is a new curve, update noHandles setting.
                 noHandles = !curve.hasHandles();
@@ -482,8 +485,7 @@ PathItem.inject(new function() {
         // for the curve-chain starting with this segment. Once we have enough
         // confidence in the winding contribution, we can propagate it until the
         // next intersection or end of a curve chain.
-        var epsilon = /*#=*/Numerical.GEOMETRIC_EPSILON,
-            chain = [],
+        var chain = [],
             start = segment,
             totalLength = 0,
             windingSum = 0;
@@ -1197,8 +1199,8 @@ Path.inject(/** @lends Path# */{
     /**
      * Returns a point that is guaranteed to be inside the path.
      *
-     * @type Point
      * @bean
+     * @type Point
      */
     getInteriorPoint: function() {
         var bounds = this.getBounds(),
